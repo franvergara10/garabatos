@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'VT323', monospace;
+}
+
+#game-container {
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+    border: 1px solid #333;
+}
