@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface PartidaRepository extends JpaRepository<Partida, Long> {
     java.util.Optional<Partida> findTopByUsuarioUsernameOrderByFechaUltimoGuardadoDesc(String username);
+    java.util.Optional<Partida> findByUsuarioUsernameAndSlot(String username, Integer slot);
+    List<Partida> findAllByUsuarioUsername(String username);
 }

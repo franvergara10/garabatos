@@ -36,6 +36,7 @@ export class AdminScene extends Phaser.Scene {
         else if (this.currentView === "users") this.drawUsersView();
         else if (this.currentView === "editor") this.drawNodeEditor();
         else if (this.currentView === "user_editor") this.drawUserEditor();
+        else if (this.currentView === "new_user") this.drawNewUserForm();
 
         this.createButton(650, 550, "CERRAR SESIÓN", () => this.scene.start('LoginScene'), "#ff0000");
     }
@@ -75,6 +76,7 @@ export class AdminScene extends Phaser.Scene {
 
     async drawUsersView() {
         this.createButton(20, 80, "< VOLVER", () => { this.currentView = "dashboard"; this.drawUI(); }, "#ffff00");
+        this.createButton(150, 80, "[+] NUEVO USUARIO", () => { this.currentView = "new_user"; this.drawUI(); }, "#00ffff");
         
         this.add.text(50, 120, "BASE DE DATOS DE USUARIOS:", { fontFamily: 'VT323', fontSize: '24px', fill: '#00ff00' });
 
@@ -97,6 +99,72 @@ export class AdminScene extends Phaser.Scene {
                 this.createButton(600, yPos, "[ELIMINAR]", () => this.deleteUser(user.id), "#aa0000", "16px");
             });
         } catch (e) {}
+    }
+
+    drawNewUserForm() {
+        this.createButton(20, 80, "< CANCELAR", () => { this.currentView = "users"; this.drawUI(); }, "#ffff00");
+
+        const formHtml = `
+            <div class="admin-form" style="color: #00ff00; font-family: 'VT323', monospace; width: 400px; background: rgba(0,20,0,0.95); padding: 20px; border: 1px solid #00ff00;">
+                <label>NOMBRE DE USUARIO:</label><br>
+                <input id="newUserName" type="text" placeholder="username" style="width: 100%; background: #000; color: #00ff00; border: 1px solid #00ff00;">
+                <br><br>
+                <label>CORREO ELECTRÓNICO:</label><br>
+                <input id="newUserEmail" type="email" placeholder="email@ejemplo.com" style="width: 100%; background: #000; color: #00ff00; border: 1px solid #00ff00;">
+                <br><br>
+                <label>CLAVE DE ACCESO:</label><br>
+                <input id="newUserPass" type="password" style="width: 100%; background: #000; color: #00ff00; border: 1px solid #00ff00;">
+                <br><br>
+                <label>ROL DEL SISTEMA:</label><br>
+                <select id="newUserRol" style="width: 100%; background: #000; color: #00ff00; border: 1px solid #00ff00;">
+                    <option value="ROLE_PLAYER">ROLE_PLAYER</option>
+                    <option value="ROLE_ADMIN">ROLE_ADMIN</option>
+                </select>
+                <br><br>
+                <div id="newUserStatus" style="color: #ffff00; min-height: 24px;"></div>
+                <br>
+                <button id="createUserBtn" style="width: 100%; background: #00ff00; color: #000; border: none; padding: 10px; cursor: pointer; font-weight: bold;">CREAR NUEVA IDENTIDAD</button>
+            </div>
+        `;
+
+        this.add.dom(400, 320).createFromHTML(formHtml);
+
+        document.getElementById('createUserBtn').onclick = () => this.createNewUser();
+    }
+
+    async createNewUser() {
+        const username = document.getElementById('newUserName').value;
+        const email = document.getElementById('newUserEmail').value;
+        const password = document.getElementById('newUserPass').value;
+        const rol = document.getElementById('newUserRol').value;
+        const statusEl = document.getElementById('newUserStatus');
+
+        if (!username || !password) {
+            statusEl.style.color = '#ff0000';
+            statusEl.innerText = 'ERROR: NOMBRE DE USUARIO Y CLAVE SON OBLIGATORIOS.';
+            return;
+        }
+
+        statusEl.style.color = '#ffff00';
+        statusEl.innerText = 'PROCESANDO...';
+
+        const response = await fetch('http://127.0.0.1:8080/api/v1/admin/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, rol })
+        });
+
+        if (response.ok) {
+            statusEl.style.color = '#00ff00';
+            statusEl.innerText = `IDENTIDAD '${username}' REGISTRADA CORRECTAMENTE.`;
+            this.time.delayedCall(1200, () => {
+                this.currentView = 'users';
+                this.drawUI();
+            });
+        } else {
+            statusEl.style.color = '#ff0000';
+            statusEl.innerText = 'ERROR: EL USUARIO YA EXISTE O LOS DATOS SON INVÁLIDOS.';
+        }
     }
 
     drawUserEditor() {

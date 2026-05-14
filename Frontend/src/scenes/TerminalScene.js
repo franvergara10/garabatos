@@ -21,9 +21,10 @@ export class TerminalScene extends Phaser.Scene {
 
     create(data) {
         this.currentNodoId = data && data.startNodoId ? data.startNodoId : 1;
+        this.currentSlot = data && data.slot ? data.slot : 1;
         this.username = localStorage.getItem('username') || "UNKNOWN";
         
-        console.log(`TerminalScene iniciada v1.2 - Nodo: ${this.currentNodoId}`);
+        console.log(`TerminalScene iniciada v1.2 - Nodo: ${this.currentNodoId} - Slot: ${this.currentSlot}`);
         this.createTerminal();
         this.loadNodo(this.currentNodoId);
         
@@ -224,9 +225,9 @@ export class TerminalScene extends Phaser.Scene {
             await fetch('http://127.0.0.1:8080/api/v1/partida/guardar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: this.username, nodoId: nodoId })
+                body: JSON.stringify({ username: this.username, slot: this.currentSlot, nodoId: nodoId })
             });
-            console.log(`Progreso guardado: Nodo ${nodoId}`);
+            console.log(`Progreso guardado: Slot ${this.currentSlot} - Nodo ${nodoId}`);
         } catch (e) {
             console.error("Error al guardar progreso:", e);
         }

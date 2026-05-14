@@ -21,6 +21,9 @@ public class Usuario {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true)
+    private String email;
+
     private String rol;
 
     public Long getId() {
@@ -45,6 +48,14 @@ public class Usuario {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getRol() {

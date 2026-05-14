@@ -5,40 +5,37 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "nodos")
 
 public class Nodo {
-    @Id
-    private Long id;
+	@Id
+	private Long id;
 
-    @Column(columnDefinition = "TEXT")
-    private String texto;
+	@Column(columnDefinition = "TEXT")
+	private String texto;
 
-    private String imagenFondo;
-    private String personajeSprite;
-    
-    // Tipo de evento: MESSAGE, CHOICE, ERROR, SYSTEM
-    private String tipoEvento;
-    
-    // Efecto estético: GLITCH, SHAKE, COLOR_RED, etc.
-    private String aestheticEffect;
-    
-    @OneToMany(mappedBy = "nodoOrigen", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<Opcion> opciones;
+	private String imagenFondo;
+	private String personajeSprite;
 
-    private String tipoNodo; // "OPCION" o "PASSWORD"
-    private String password;
-    private String mensajeErrorPassword;
+	// Tipo de evento: MESSAGE, CHOICE, ERROR, SYSTEM
+	private String tipoEvento;
+
+	// Efecto estético: GLITCH, SHAKE, COLOR_RED, etc.
+	private String aestheticEffect;
+
+	@OneToMany(mappedBy = "nodoOrigen", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<Opcion> opciones;
+
+	private String tipoNodo; // "OPCION" o "PASSWORD"
+	private String password;
+	private String mensajeErrorPassword;
 
 	public String getTipoNodo() {
 		return tipoNodo;
@@ -119,7 +116,5 @@ public class Nodo {
 	public void setOpciones(List<Opcion> opciones) {
 		this.opciones = opciones;
 	}
-  
+
 }
-
-

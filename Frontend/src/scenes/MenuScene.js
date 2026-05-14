@@ -8,7 +8,7 @@ export class MenuScene extends Phaser.Scene {
     create() {
         this.username = localStorage.getItem('username') || "UNKNOWN USER";
 
-        this.add.text(20, 20, "TERMINAL FEDERAL - INTERFAZ PRINCIPAL", {
+        this.add.text(20, 20, "TERMINAL Nº 05 - MENÚ PRINCIPAL", {
             fontFamily: 'VT323', fontSize: '32px', fill: '#00ff00'
         });
 
@@ -16,23 +16,53 @@ export class MenuScene extends Phaser.Scene {
             fontFamily: 'VT323', fontSize: '24px', fill: '#ffff00'
         });
 
-        this.createButton(100, 200, "[1] INICIALIZAR NUEVA SESIÓN (NUEVA PARTIDA)", () => this.startNewGame());
-        this.createButton(100, 260, "[2] REANUDAR SESIÓN PREVIA (CONTINUAR)", () => this.continueGame());
-        this.createButton(100, 320, "[3] TERMINAR CONEXIÓN (SALIR)", () => this.logout(), "#ff0000");
+        this.loadingText = this.add.text(20, 140, "CONSULTANDO REGISTROS CENTRALES...", {
+            fontFamily: 'VT323', fontSize: '20px', fill: '#ffff00'
+        });
+
+        this.loadSlots();
 
         // Scanlines effect
         this.applyCRTFilter();
     }
 
-    async startNewGame() {
-        await fetch(`http://127.0.0.1:8080/api/v1/partida/nueva/${this.username}`, { method: 'POST' });
-        this.scene.start('TerminalScene', { startNodoId: 1 });
+    async loadSlots() {
+        try {
+            const response = await fetch(`http://127.0.0.1:8080/api/v1/partida/slots/${this.username}`);
+            const slots = await response.json();
+
+            this.loadingText.destroy();
+
+            let y = 160;
+            slots.forEach((slotData) => {
+                const text = slotData.vacio
+                    ? `[ HUECO ${slotData.slot} ] - VACÍO (INICIAR NUEVA SESIÓN)`
+                    : `[ HUECO ${slotData.slot} ] - DATOS: ${slotData.fecha.substring(0, 16).replace('T', ' ')}`;
+
+                const color = slotData.vacio ? "#00ff00" : "#00ffff";
+                this.createButton(20, y, text, () => this.handleSlotClick(slotData), color);
+                y += 50;
+            });
+
+            this.createButton(20, y + 20, "[ CAMBIAR CLAVE DE ACCESO ]", () => this.scene.start('ChangePasswordScene'), "#00ff00");
+            this.createButton(20, y + 70, "[ TERMINAR CONEXIÓN (SALIR) ]", () => this.logout(), "#ff0000");
+
+        } catch (e) {
+            console.error("Error al cargar slots:", e);
+            this.loadingText.setText("ERROR: NO SE PUDO CONECTAR CON LOS REGISTROS.");
+            this.loadingText.setFill("#ff0000");
+        }
     }
 
-    async continueGame() {
-        const response = await fetch(`http://127.0.0.1:8080/api/v1/partida/ultimo-nodo/${this.username}`);
-        const data = await response.json();
-        this.scene.start('TerminalScene', { startNodoId: data.nodoId });
+    async handleSlotClick(slotData) {
+        if (slotData.vacio) {
+            await fetch(`http://127.0.0.1:8080/api/v1/partida/nueva/${this.username}/${slotData.slot}`, { method: 'POST' });
+            this.scene.start('TerminalScene', { startNodoId: 1, slot: slotData.slot });
+        } else {
+            const response = await fetch(`http://127.0.0.1:8080/api/v1/partida/ultimo-nodo/${this.username}/${slotData.slot}`);
+            const data = await response.json();
+            this.scene.start('TerminalScene', { startNodoId: data.nodoId, slot: slotData.slot });
+        }
     }
 
     logout() {

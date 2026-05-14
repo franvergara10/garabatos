@@ -11,6 +11,7 @@ import com.fran.garabatos.persistance.entities.Usuario;
 import com.fran.garabatos.persistance.repositories.UsuarioRepository;
 import com.fran.garabatos.services.HistoriaService;
 import com.fran.garabatos.services.dto.EscenaDTO;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -25,6 +26,8 @@ public class AdminController {
 
     @Autowired
     private OpcionRepository opcionRepository;
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @GetMapping("/nodos")
     public List<EscenaDTO> obtenerNodos() {
@@ -57,12 +60,24 @@ public class AdminController {
         return usuarioRepository.findAll();
     }
 
+    @PostMapping("/usuarios")
+    public Usuario crearUsuario(@RequestBody Usuario usuario) {
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+        if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+            usuario.setRol("ROLE_PLAYER");
+        }
+        return usuarioRepository.save(usuario);
+    }
+
     @PutMapping("/usuarios/{id}")
     public Usuario actualizarUsuario(@PathVariable Long id, @RequestBody Usuario usuarioData) {
         return usuarioRepository.findById(id).map(u -> {
             u.setUsername(usuarioData.getUsername());
             if (usuarioData.getPassword() != null && !usuarioData.getPassword().isEmpty()) {
-                u.setPassword(usuarioData.getPassword());
+                u.setPassword(passwordEncoder.encode(usuarioData.getPassword()));
+            }
+            if (usuarioData.getEmail() != null) {
+                u.setEmail(usuarioData.getEmail());
             }
             u.setRol(usuarioData.getRol());
             return usuarioRepository.save(u);

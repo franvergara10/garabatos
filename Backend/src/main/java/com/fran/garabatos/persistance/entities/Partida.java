@@ -18,6 +18,9 @@ public class Partida {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @jakarta.persistence.Column(nullable = false)
+    private Integer slot;
+
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
@@ -28,11 +31,7 @@ public class Partida {
 
     private java.time.LocalDateTime fechaUltimoGuardado;
 
-    @jakarta.persistence.ElementCollection
-    @jakarta.persistence.CollectionTable(name = "partida_variables", joinColumns = @jakarta.persistence.JoinColumn(name = "partida_id"))
-    @jakarta.persistence.MapKeyColumn(name = "variable_key")
-    @jakarta.persistence.Column(name = "variable_value")
-    private java.util.Map<String, String> variablesProgreso = new java.util.HashMap<>();
+
 
     @PrePersist
     protected void onCreate() {
@@ -47,6 +46,7 @@ public class Partida {
     public void setNodoActual(Nodo nodoActual) { this.nodoActual = nodoActual; }
     public java.time.LocalDateTime getFechaUltimoGuardado() { return fechaUltimoGuardado; }
     public void setFechaUltimoGuardado(java.time.LocalDateTime fechaUltimoGuardado) { this.fechaUltimoGuardado = fechaUltimoGuardado; }
-    public java.util.Map<String, String> getVariablesProgreso() { return variablesProgreso; }
-    public void setVariablesProgreso(java.util.Map<String, String> variablesProgreso) { this.variablesProgreso = variablesProgreso; }
+
+    public Integer getSlot() { return slot; }
+    public void setSlot(Integer slot) { this.slot = slot; }
 }

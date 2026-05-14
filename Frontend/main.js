@@ -3,6 +3,7 @@ import { TerminalScene } from './src/scenes/TerminalScene';
 import { AdminScene } from './src/scenes/AdminScene';
 import { LoginScene } from './src/scenes/LoginScene';
 import { MenuScene } from './src/scenes/MenuScene';
+import { ChangePasswordScene } from './src/scenes/ChangePasswordScene';
 
 const config = {
     type: Phaser.AUTO,
@@ -14,7 +15,7 @@ const config = {
     dom: {
         createContainer: true
     },
-    scene: [LoginScene, MenuScene, TerminalScene, AdminScene]
+    scene: [LoginScene, MenuScene, TerminalScene, AdminScene, ChangePasswordScene]
 };
 
 document.fonts.ready.then(() => {

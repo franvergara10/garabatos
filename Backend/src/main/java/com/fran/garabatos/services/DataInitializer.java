@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.fran.garabatos.persistance.entities.Nodo;
 import com.fran.garabatos.persistance.entities.Opcion;
 import com.fran.garabatos.persistance.repositories.NodoRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.ArrayList;
 
 @Component
@@ -21,9 +22,10 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         // 1. Crear admin por defecto
         if (usuarioRepository.findByUsername("admin").isEmpty()) {
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
             com.fran.garabatos.persistance.entities.Usuario admin = new com.fran.garabatos.persistance.entities.Usuario();
             admin.setUsername("admin");
-            admin.setPassword("admin");
+            admin.setPassword(encoder.encode("admin"));
             admin.setRol("ROLE_ADMIN");
             usuarioRepository.save(admin);
             System.out.println(">>> Usuario administrador creado (admin/admin).");
