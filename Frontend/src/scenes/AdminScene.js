@@ -7,6 +7,10 @@ export class AdminScene extends Phaser.Scene {
         this.editingNode = null;
         this.editingUser = null;
         this.tempOptions = [];
+        this.nodesListScroll = 0;
+        this.nodesListContainer = null;
+        this._nodesListMaxScroll = 0;
+        this._adminNodesWheel = null;
     }
 
     create() {
@@ -14,6 +18,12 @@ export class AdminScene extends Phaser.Scene {
     }
 
     drawUI() {
+        if (this._adminNodesWheel) {
+            this.input.off('wheel', this._adminNodesWheel);
+            this._adminNodesWheel = null;
+        }
+        this.nodesListContainer = null;
+
         // Destruir físicamente todos los objetos previos para limpiar memoria y clicks
         this.children.each(child => child.destroy());
         this.children.removeAll(); 
@@ -47,10 +57,19 @@ export class AdminScene extends Phaser.Scene {
     }
 
     async drawNodesView() {
-        this.createButton(20, 80, "< VOLVER", () => { this.currentView = "dashboard"; this.drawUI(); }, "#ffff00");
-        this.createButton(150, 80, "[+] NUEVO NODO", () => { 
-            this.editingNode = null; this.tempOptions = []; this.currentView = "editor"; this.drawUI(); 
+        this.createButton(20, 80, "< VOLVER", () => {
+            this.nodesListScroll = 0;
+            this.currentView = "dashboard";
+            this.drawUI();
+        }, "#ffff00");
+        this.createButton(150, 80, "[+] NUEVO NODO", () => {
+            this.editingNode = null; this.tempOptions = []; this.currentView = "editor"; this.drawUI();
         }, "#00ffff");
+
+        const listTop = 135;
+        const listHeight = 400;
+        const rowH = 45;
+        const listOriginY = 150;
 
         try {
             const response = await fetch(`http://127.0.0.1:8080/api/v1/admin/nodos`);
@@ -58,19 +77,49 @@ export class AdminScene extends Phaser.Scene {
             
             if (this.currentView !== "nodes") return;
 
+            const totalListH = items.length * rowH;
+            this._nodesListMaxScroll = Math.max(0, totalListH - listHeight);
+            this.nodesListScroll = Phaser.Math.Clamp(this.nodesListScroll, 0, this._nodesListMaxScroll);
+
+            const maskG = this.make.graphics({ x: 0, y: 0, add: false });
+            maskG.fillStyle(0xffffff);
+            maskG.fillRect(15, listTop, 770, listHeight);
+            const listMask = maskG.createGeometryMask();
+
+            const listContainer = this.add.container(50, listOriginY - this.nodesListScroll);
+            listContainer.setMask(listMask);
+            this.nodesListContainer = listContainer;
+
             items.forEach((nodo, i) => {
                 const label = `ID: ${nodo.id} | ${nodo.texto.substring(0, 40)}...`;
-                const yPos = 150 + (i * 45);
-                
-                this.createButton(50, yPos, label, () => {
+                const yRel = i * rowH;
+
+                this.createButton(0, yRel, label, () => {
                     this.editingNode = nodo;
                     this.tempOptions = nodo.opciones || [];
                     this.currentView = "editor";
                     this.drawUI();
-                }, "#ffffff", "18px");
+                }, "#ffffff", "18px", listContainer);
 
-                this.createButton(600, yPos, "[ELIMINAR]", () => this.deleteNode(nodo.id), "#aa0000", "16px");
+                this.createButton(550, yRel, "[ELIMINAR]", () => this.deleteNode(nodo.id), "#aa0000", "16px", listContainer);
             });
+
+            this._adminNodesWheel = (pointer, _go, _dx, dy) => {
+                if (this.currentView !== "nodes" || !this.nodesListContainer) return;
+                this.nodesListScroll = Phaser.Math.Clamp(
+                    this.nodesListScroll + dy * 0.6,
+                    0,
+                    this._nodesListMaxScroll
+                );
+                this.nodesListContainer.y = listOriginY - this.nodesListScroll;
+            };
+            this.input.on('wheel', this._adminNodesWheel);
+
+            if (items.length * rowH > listHeight) {
+                this.add.text(400, 118, "(RUEDA DEL RATÓN PARA DESPLAZAR LA LISTA)", {
+                    fontFamily: 'VT323', fontSize: '18px', fill: '#008800'
+                }).setOrigin(0.5, 0);
+            }
         } catch (e) {}
     }
 
@@ -391,9 +440,12 @@ export class AdminScene extends Phaser.Scene {
         }
     }
 
-    createButton(x, y, text, callback, color = "#00ff00", size = "24px") {
+    createButton(x, y, text, callback, color = "#00ff00", size = "24px", parentContainer = null) {
         const viewAtCreation = this.currentView;
         const btn = this.add.text(x, y, text, { fontFamily: 'VT323', fontSize: size, fill: color, padding: { x: 5, y: 2 } });
+        if (parentContainer) {
+            parentContainer.add(btn);
+        }
         btn.setInteractive({ useHandCursor: true });
         btn.on('pointerover', () => { btn.setBackgroundColor('#004400'); btn.setStyle({ fill: '#ffffff' }); });
         btn.on('pointerout', () => { btn.setBackgroundColor('transparent'); btn.setStyle({ fill: color }); });
