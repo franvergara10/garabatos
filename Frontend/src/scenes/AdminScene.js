@@ -26,8 +26,8 @@ export class AdminScene extends Phaser.Scene {
 
         // Destruir físicamente todos los objetos previos para limpiar memoria y clicks
         this.children.each(child => child.destroy());
-        this.children.removeAll(); 
-        
+        this.children.removeAll();
+
         const forms = document.querySelectorAll('.admin-form');
         forms.forEach(f => f.remove());
 
@@ -72,28 +72,36 @@ export class AdminScene extends Phaser.Scene {
         const listOriginY = 150;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8080/api/v1/admin/nodos`);
+            // 1. CORREGIDO: Ruta relativa para evitar ERR_CONNECTION_REFUSED
+            const response = await fetch(`/api/v1/admin/nodos`);
             const items = await response.json();
-            
+
             if (this.currentView !== "nodes") return;
 
             const totalListH = items.length * rowH;
             this._nodesListMaxScroll = Math.max(0, totalListH - listHeight);
             this.nodesListScroll = Phaser.Math.Clamp(this.nodesListScroll, 0, this._nodesListMaxScroll);
 
+            // 2. MÁSCARA: Usaremos un BitmapMask si el GeometryMask te da problemas, 
+            // pero de momento vamos a asegurar que el gráfico esté bien definido.
             const maskG = this.make.graphics({ x: 0, y: 0, add: false });
             maskG.fillStyle(0xffffff);
             maskG.fillRect(15, listTop, 770, listHeight);
             const listMask = maskG.createGeometryMask();
 
             const listContainer = this.add.container(50, listOriginY - this.nodesListScroll);
-            listContainer.setMask(listMask);
+
+            // Si sigue saliendo el warning y no necesitas scroll con recorte, 
+            // puedes comentar la siguiente línea:
+            //listContainer.setMask(listMask);
+
             this.nodesListContainer = listContainer;
 
             items.forEach((nodo, i) => {
                 const label = `ID: ${nodo.id} | ${nodo.texto.substring(0, 40)}...`;
                 const yRel = i * rowH;
 
+                // Pasamos el listContainer como padre para que los botones se muevan con el scroll
                 this.createButton(0, yRel, label, () => {
                     this.editingNode = nodo;
                     this.tempOptions = nodo.opciones || [];
@@ -104,6 +112,8 @@ export class AdminScene extends Phaser.Scene {
                 this.createButton(550, yRel, "[ELIMINAR]", () => this.deleteNode(nodo.id), "#aa0000", "16px", listContainer);
             });
 
+            // 3. EVENTO DE RUEDA: Limpiamos el evento anterior para no acumular listeners
+            this.input.off('wheel');
             this._adminNodesWheel = (pointer, _go, _dx, dy) => {
                 if (this.currentView !== "nodes" || !this.nodesListContainer) return;
                 this.nodesListScroll = Phaser.Math.Clamp(
@@ -120,13 +130,15 @@ export class AdminScene extends Phaser.Scene {
                     fontFamily: 'VT323', fontSize: '18px', fill: '#008800'
                 }).setOrigin(0.5, 0);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error("Error cargando nodos:", e);
+        }
     }
 
     async drawUsersView() {
         this.createButton(20, 80, "< VOLVER", () => { this.currentView = "dashboard"; this.drawUI(); }, "#ffff00");
         this.createButton(150, 80, "[+] NUEVO USUARIO", () => { this.currentView = "new_user"; this.drawUI(); }, "#00ffff");
-        
+
         this.add.text(50, 120, "BASE DE DATOS DE USUARIOS:", { fontFamily: 'VT323', fontSize: '24px', fill: '#00ff00' });
 
         try {
@@ -138,7 +150,7 @@ export class AdminScene extends Phaser.Scene {
             items.forEach((user, i) => {
                 const label = `ID: ${user.id} | ${user.username} [${user.rol}]`;
                 const yPos = 160 + (i * 50);
-                
+
                 this.createButton(50, yPos, label, () => {
                     this.editingUser = user;
                     this.currentView = "user_editor";
@@ -147,7 +159,7 @@ export class AdminScene extends Phaser.Scene {
 
                 this.createButton(600, yPos, "[ELIMINAR]", () => this.deleteUser(user.id), "#aa0000", "16px");
             });
-        } catch (e) {}
+        } catch (e) { }
     }
 
     drawNewUserForm() {
@@ -284,7 +296,7 @@ export class AdminScene extends Phaser.Scene {
         }
 
         const isNew = !this.editingNode;
-        
+
         let optionsHtml = this.tempOptions.map((opt, idx) => `
             <div style="margin-bottom: 5px; display: flex; gap: 10px;">
                 <input type="text" placeholder="Button Text" value="${opt.textoBoton}" onchange="window.updateOpt(${idx}, 'textoBoton', this.value)" style="flex: 2; background: #000; color: #00ff00; border: 1px solid #444;">
@@ -330,9 +342,9 @@ export class AdminScene extends Phaser.Scene {
                             <select id="nodePassDestino" style="width: 100%; background: #000; color: #00ffff; border: 1px solid #00ffff;">
                                 <option value="">-- SELECCIONAR --</option>
                                 ${this.allNodes ? this.allNodes.map(n => {
-                                    const passDestVal = isPassword && this.tempOptions.length > 0 ? this.tempOptions[0].destinoId : "";
-                                    return `<option value="${n.id}" ${n.id == passDestVal ? 'selected' : ''}>[ID: ${n.id}] ${n.texto.substring(0, 15)}...</option>`;
-                                }).join('') : ''}
+            const passDestVal = isPassword && this.tempOptions.length > 0 ? this.tempOptions[0].destinoId : "";
+            return `<option value="${n.id}" ${n.id == passDestVal ? 'selected' : ''}>[ID: ${n.id}] ${n.texto.substring(0, 15)}...</option>`;
+        }).join('') : ''}
                             </select>
                         </div>
                     </div>
@@ -372,15 +384,15 @@ export class AdminScene extends Phaser.Scene {
             }
         };
 
-        window.addOpt = () => { 
+        window.addOpt = () => {
             window.syncForm();
-            this.tempOptions.push({ textoBoton: "", destinoId: null }); 
-            this.drawUI(); 
+            this.tempOptions.push({ textoBoton: "", destinoId: null });
+            this.drawUI();
         };
-        window.removeOpt = (idx) => { 
+        window.removeOpt = (idx) => {
             window.syncForm();
-            this.tempOptions.splice(idx, 1); 
-            this.drawUI(); 
+            this.tempOptions.splice(idx, 1);
+            this.drawUI();
         };
         window.updateOpt = (idx, field, val) => { this.tempOptions[idx][field] = field === 'destinoId' ? parseInt(val) : val; };
         document.getElementById('saveBtn').onclick = () => this.saveNodeWithBranches();
